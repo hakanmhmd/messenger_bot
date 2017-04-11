@@ -9,9 +9,12 @@ from pprint import pprint
 
 def post_fb_message(id, message):
     post_url = 'https://graph.facebook.com/v2.6/me/messages?access_token=EAAUs8meKfw4BANFv1Xwlpvb4X6s6Gk5vkmXGyYAJhouKkdAZA3wEvyr0fGEw8kv9WIcihGpvaPWa2ZBxIEUNrE4fetMkcZCfB9hZADPS7mAmNZCOuzWJggUOxmkpdr68H9RtQ4YgZCCX40HLSWAuNdqOhDldEujZA12mnYC2VnwaAZDZD'
-    msg = json.dumps({"recipient":{"id":id}, "message":{"text":message}})
-    status = requests.post(post_url, headers={"Content-Type": "application/json"}, data=msg);
-    pprint(status.json())
+    user_url = "https://graph.facebook.com/v2.6/%s"%id
+    user_params = {'fields':'first_name,last_name,profile_pic', 'access_token':'EAAUs8meKfw4BANFv1Xwlpvb4X6s6Gk5vkmXGyYAJhouKkdAZA3wEvyr0fGEw8kv9WIcihGpvaPWa2ZBxIEUNrE4fetMkcZCfB9hZADPS7mAmNZCOuzWJggUOxmkpdr68H9RtQ4YgZCCX40HLSWAuNdqOhDldEujZA12mnYC2VnwaAZDZD'}
+    user = requests.get(user_url, user_params).json()
+    reply_msg = 'Hey '+ user['first_name']+': ' + message
+    reply = json.dumps({"recipient":{"id":id}, "message":{"text":reply_msg}})
+    status = requests.post(post_url, headers={"Content-Type": "application/json"}, data=reply)
 
 class RecipebotView(generic.View):
     def get(self, request, *args, **kwargs):
@@ -29,8 +32,8 @@ class RecipebotView(generic.View):
         message = json.loads(self.request.body.decode('utf-8'))
         for entry in message['entry']:
             for entryMessage in entry['messaging']:
-                if entryMessage['message']:
-                    pprint(entryMessage)
+                pprint(entryMessage)
+                if 'message' in entryMessage:
                     post_fb_message(entryMessage['sender']['id'], entryMessage['message']['text'])
         return HttpResponse()
 
