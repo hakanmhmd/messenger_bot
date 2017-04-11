@@ -6,6 +6,13 @@ from django.views.decorators.csrf import csrf_exempt
 import json, requests, random, re
 from pprint import pprint
 
+
+def post_fb_message(id, message):
+    post_url = 'https://graph.facebook.com/v2.6/me/messages?access_token=EAAUs8meKfw4BANFv1Xwlpvb4X6s6Gk5vkmXGyYAJhouKkdAZA3wEvyr0fGEw8kv9WIcihGpvaPWa2ZBxIEUNrE4fetMkcZCfB9hZADPS7mAmNZCOuzWJggUOxmkpdr68H9RtQ4YgZCCX40HLSWAuNdqOhDldEujZA12mnYC2VnwaAZDZD'
+    msg = json.dumps({"recipient":{"id":id}, "message":{"text":message}})
+    status = requests.post(post_url, headers={"Content-Type": "application/json"}, data=msg);
+    pprint(status.json())
+
 class RecipebotView(generic.View):
     def get(self, request, *args, **kwargs):
         if self.request.GET['hub.verify_token'] == '1375110023':
@@ -22,7 +29,8 @@ class RecipebotView(generic.View):
         message = json.loads(self.request.body.decode('utf-8'))
         for entry in message['entry']:
             for entryMessage in entry['messaging']:
-                pprint(entryMessage)
-        
+                if entryMessage['message']:
+                    pprint(entryMessage)
+                    post_fb_message(entryMessage['sender']['id'], entryMessage['message']['text'])
         return HttpResponse()
 
