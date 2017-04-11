@@ -5,4 +5,7 @@ from django.http.response import HttpResponse
 
 class RecipebotView(generic.View):
     def get(self, request, *args, **kwargs):
-        return HttpResponse("Hello World!")
+        if self.request.GET['hub.verify_token'] == '1375110023':
+            return HttpResponse(self.request.GET['hub.challenge'])
+        else:
+            return HttpResponse('Invalid token!')
