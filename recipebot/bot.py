@@ -2,6 +2,8 @@
 
 import os
 import requests
+import apiai
+import json
 from sys import argv
 from wit import Wit
 from bottle import Bottle, request, debug
@@ -46,7 +48,7 @@ def messenger_post():
                     fb_id = message['sender']['id']
                     # We retrieve the message content
                     text = message['message']['text']
-                    fb_message(fb_id, text)
+                    fb_message(fb_id, apiaiProcessing(text))
     else:
         # Returned another event
         return 'Received Different Event'
@@ -69,7 +71,15 @@ def fb_message(sender_id, text):
     return resp.content
 
 
+def apiaiProcessing(input):
+    request = ai.text_request()
+    request.lang = 'en'
+    request.session_id = 'messengerbot'
+    request.query = input
+    response = request.getresponse()
 
+    parsedResp = json.loads(response.read())
+    return parsedResp['result']['fulfillment']['speech']
 
 
 
@@ -80,6 +90,12 @@ if __name__ == '__main__':
 
     # A user secret to verify webhook get request.
     FB_VERIFY_TOKEN = os.environ.get('FB_VERIFY_TOKEN')
+
+    # Api.ai token for NLP
+    API_AI_TOKEN = os.environ.get('API_AI_TOKEN')
+
+    # AI instance
+    ai = apiai.ApiAI(API_AI_TOKEN)
 
     # Run Server
     app.run(host='0.0.0.0', port=8000)

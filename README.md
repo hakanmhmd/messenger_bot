@@ -8,3 +8,5 @@ Facebook chatbot platform: https://developers.facebook.com/docs/messenger-platfo
 ngrok: https://ngrok.com/
 
 Bottle: https://bottlepy.org/docs/dev/
+
+api.ai: https://docs.api.ai/docs/welcome
