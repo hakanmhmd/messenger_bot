@@ -7,4 +7,4 @@ Facebook chatbot platform: https://developers.facebook.com/docs/messenger-platfo
 
 ngrok: https://ngrok.com/
 
-Django: https://www.djangoproject.com
+Bottle: https://bottlepy.org/docs/dev/
