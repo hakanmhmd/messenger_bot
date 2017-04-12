@@ -37,25 +37,47 @@ def messenger_post():
     Handler for webhook (currently for postback and messages)
     """
     data = request.json
+    print data
     if data['object'] == 'page':
         for entry in data['entry']:
             # get all the messages
             messages = entry['messaging']
             for message in messages:
                 if 'message' in message:
-                    print(message)
                     # We retrieve the Facebook user ID of the sender
                     fb_id = message['sender']['id']
                     # We retrieve the message content
                     text = message['message']['text']
-                    fb_message(fb_id, apiaiProcessing(text))
+                    send_text_message(fb_id, apiaiProcessing(text))
     else:
         # Returned another event
         return 'Received Different Event'
     return None
 
+@app.post('/image-search')
+def image_search():
+    """
+    Handler for image search webhook
+    """
+    # Dissect the body
+    body = json.loads(request.body.read())
+    action = body['result']['action']
+    # Check for type of action
+    if action == 'image':
+        # Retrieve search query
+        searchQuery = body['result']['parameters']['image_name']
+        # GET request to getty
+        url = GETTY_URL + searchQuery
+        response = requests.get(url, headers={'Api-Key': GETTY_TOKEN})
+        parsedResp = json.loads(response.content)
+        # Get the required parameters
+        imageUri = parsedResp['images'][0]['display_sizes'][0]['uri']
+        
+        return imageUri
 
-def fb_message(sender_id, text):
+
+
+def send_text_message(sender_id, text):
     """
     Function for returning response to messenger
     """
@@ -99,6 +121,10 @@ if __name__ == '__main__':
 
     # A user secret to verify webhook get request.
     FB_VERIFY_TOKEN = os.environ.get('FB_VERIFY_TOKEN')
+
+    #getty api
+    GETTY_TOKEN = os.environ.get('GETTY_KEY')
+    GETTY_URL = 'https://api.gettyimages.com/v3/search/images?fields=id,title,thumb,referral_destinations&sort_order=best&phrase='
 
     # Api.ai token for NLP
     API_AI_TOKEN = os.environ.get('API_AI_TOKEN')
