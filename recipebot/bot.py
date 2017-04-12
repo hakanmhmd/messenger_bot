@@ -15,7 +15,7 @@ app = Bottle()
 
 
 # Facebook Messenger GET Webhook
-@app.get('/fb_recipebot/secretwebhook/')
+@app.get('/webhook')
 def messenger_webhook():
     """
     A webhook to return a challenge
@@ -31,7 +31,7 @@ def messenger_webhook():
 
 
 # Facebook Messenger POST Webhook
-@app.post('/fb_recipebot/secretwebhook/')
+@app.post('/webhook')
 def messenger_post():
     """
     Handler for webhook (currently for postback and messages)
@@ -77,10 +77,19 @@ def apiaiProcessing(input):
     request.session_id = 'messengerbot'
     request.query = input
     response = request.getresponse()
-
+    
     parsedResp = json.loads(response.read())
-    return parsedResp['result']['fulfillment']['speech']
-
+    result = parsedResp.get('result')
+    if result is None:
+        return ''
+    fulfillment = result.get('fulfillment')
+    if fulfillment is None:
+        return ''
+    speech = fulfillment.get('speech')
+    if speech is None:
+        return ''
+    
+    return speech
 
 
 if __name__ == '__main__':
@@ -98,4 +107,4 @@ if __name__ == '__main__':
     ai = apiai.ApiAI(API_AI_TOKEN)
 
     # Run Server
-    app.run(host='0.0.0.0', port=8000)
+    app.run(host='0.0.0.0', port=8000, reloader=True)
