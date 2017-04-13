@@ -36,8 +36,8 @@ def messenger_post():
     """
     Handler for webhook (currently for postback and messages)
     """
+    print('In webhook post')
     data = request.json
-    print data
     if data['object'] == 'page':
         for entry in data['entry']:
             # get all the messages
@@ -54,39 +54,25 @@ def messenger_post():
         return 'Received Different Event'
     return None
 
-@app.post('/image-search')
-def image_search():
-    """
-    Handler for image search webhook
-    """
-    # Dissect the body
-    body = json.loads(request.body.read())
-    action = body['result']['action']
-    # Check for type of action
-    if action == 'image':
-        # Retrieve search query
-        searchQuery = body['result']['parameters']['image_name']
-        # GET request to getty
-        url = GETTY_URL + searchQuery
-        response = requests.get(url, headers={'Api-Key': GETTY_TOKEN})
-        parsedResp = json.loads(response.content)
-        # Get the required parameters
-        imageUri = parsedResp['images'][0]['display_sizes'][0]['uri']
-        
-        # Build a json object to return
-        data = {}
-        data['speech'] = imageUri
-        data['displayText'] = imageUri
-        data['source'] = 'image_name'
-        return json.dumps(data)
+# Fetch image from getty
+def fetch_image_by_text(searchQuery):
+    # GET request to getty
+    url = GETTY_URL + searchQuery
+    response = requests.get(url, headers={'Api-Key': GETTY_TOKEN})
+    parsedResp = json.loads(response.content)
+    # Get the required parameters
+    imageUri = parsedResp['images'][0]['display_sizes'][0]['uri']
+
+    return imageUri
 
 def send_image_message(sender_id, imageUri):
+    print('In send image message')
     """
     Function for returning image response to messenger
     """
     data = {
         'recipient': {'id': sender_id},
-        'message': {'attachment': {'type': 'image', 'payload': {'uri': imageUri}}}
+        'message': {'attachment': {'type': 'image', 'payload': {'url': imageUri}}}
     }
     # Setup the query string with your PAGE TOKEN
     qs = 'access_token=' + FB_PAGE_TOKEN
@@ -96,6 +82,7 @@ def send_image_message(sender_id, imageUri):
     return resp.content
 
 def send_text_message(sender_id, text):
+    print('In send text message')
     """
     Function for returning text response to messenger
     """
@@ -112,6 +99,7 @@ def send_text_message(sender_id, text):
 
 
 def processMessage(fb_id, input):
+    print('In process message')
     request = ai.text_request()
     request.lang = 'en'
     request.session_id = 'messengerbot'
@@ -119,6 +107,7 @@ def processMessage(fb_id, input):
     response = request.getresponse()
     
     parsedResp = json.loads(response.read())
+    print parsedResp
     result = parsedResp.get('result')
     if result is None:
         return ''
@@ -132,11 +121,15 @@ def processMessage(fb_id, input):
     metadata = result.get('metadata')
     intentName = metadata.get('intentName')
     if intentName is None:
-        print('Sending messages... ' + speech)
+        print('Sending message... ')
         send_text_message(fb_id, speech)
     elif intentName == 'images.search':
-        print('Sending image... ' + speech)
-        send_image_message(fb_id, speech)
+        print('Sending image... ')
+        searchQuery = result['parameters']['image_name']
+        if searchQuery == '':
+            return send_text_message(fb_id, 'I could not find any images.')
+        imageUri = fetch_image_by_text(searchQuery)
+        send_image_message(fb_id, imageUri)
 
 
 
