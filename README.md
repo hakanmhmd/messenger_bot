@@ -1,4 +1,4 @@
-# Recipe bot
+# Messenger bot
 Facebook NLP-driven bot for recipe suggestions
 
 ## Resources used
