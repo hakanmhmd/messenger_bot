@@ -48,7 +48,7 @@ def messenger_post():
                     fb_id = message['sender']['id']
                     # We retrieve the message content
                     text = message['message']['text']
-                    send_text_message(fb_id, apiaiProcessing(text))
+                    processMessage(fb_id, text)
     else:
         # Returned another event
         return 'Received Different Event'
@@ -73,13 +73,31 @@ def image_search():
         # Get the required parameters
         imageUri = parsedResp['images'][0]['display_sizes'][0]['uri']
         
-        return imageUri
+        # Build a json object to return
+        data = {}
+        data['speech'] = imageUri
+        data['displayText'] = imageUri
+        data['source'] = 'image_name'
+        return json.dumps(data)
 
-
+def send_image_message(sender_id, imageUri):
+    """
+    Function for returning image response to messenger
+    """
+    data = {
+        'recipient': {'id': sender_id},
+        'message': {'attachment': {'type': 'image', 'payload': {'uri': imageUri}}}
+    }
+    # Setup the query string with your PAGE TOKEN
+    qs = 'access_token=' + FB_PAGE_TOKEN
+    # Send POST request to messenger
+    resp = requests.post('https://graph.facebook.com/me/messages?' + qs,
+                         json=data)
+    return resp.content
 
 def send_text_message(sender_id, text):
     """
-    Function for returning response to messenger
+    Function for returning text response to messenger
     """
     data = {
         'recipient': {'id': sender_id},
@@ -93,7 +111,7 @@ def send_text_message(sender_id, text):
     return resp.content
 
 
-def apiaiProcessing(input):
+def processMessage(fb_id, input):
     request = ai.text_request()
     request.lang = 'en'
     request.session_id = 'messengerbot'
@@ -111,7 +129,15 @@ def apiaiProcessing(input):
     if speech is None:
         return ''
     
-    return speech
+    metadata = result.get('metadata')
+    intentName = metadata.get('intentName')
+    if intentName is None:
+        print('Sending messages... ' + speech)
+        send_text_message(fb_id, speech)
+    elif intentName == 'images.search':
+        print('Sending image... ' + speech)
+        send_image_message(fb_id, speech)
+
 
 
 if __name__ == '__main__':
